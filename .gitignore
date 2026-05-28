@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.wrangler/
+dev.log
+test-seed.sql
+*.env
+.dev.vars
