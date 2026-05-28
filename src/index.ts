@@ -21,7 +21,7 @@ import type { Env } from './env';
 import { validateSession, createSession, destroySession, setSessionCookie, clearSessionCookie, isSecure } from './session';
 import { getConfig, setConfig, createShareLink, getShareLink, listShareLinks, deleteShareLink, recordJoin, getJoinCount, getJoiners, alreadyJoined } from './db';
 import { login, getJoinerContactId } from './dl-auth';
-import { getValidTokens, getUpcomingCourtBookings, addPlayerToBooking, getClub, sportName, registerDevice, getValidHmacSecret } from './dl-client';
+import { getValidTokens, getUpcomingCourtBookings, addPlayerToBooking, getClub, sportName, registerDevice } from './dl-client';
 import { generateKeyMaterial, mintHmacSecret, encrypt, decrypt, u8ToB64, b64ToU8 } from './crypto';
 import { setupPage, dashboardPage, shareLinksPage, sharePage, type BookingCardData, type ShareLinkRow } from './templates';
 
@@ -52,12 +52,8 @@ async function route(request: Request, env: Env): Promise<Response> {
 
   // Public share pages — no auth
   const shareMatch = path.match(/^\/share\/([a-zA-Z0-9_-]{12,32})$/);
-  if (shareMatch) {
-    if (method === 'GET')  return handleShareGet(request, env, shareMatch[1]);
-    if (method === 'POST') {
-      // might be join — check for /join suffix
-    }
-  }
+  if (shareMatch && method === 'GET') return handleShareGet(request, env, shareMatch[1]);
+
   const joinMatch = path.match(/^\/share\/([a-zA-Z0-9_-]{12,32})\/join$/);
   if (joinMatch && method === 'POST') return handleJoin(request, env, joinMatch[1]);
 
@@ -219,9 +215,14 @@ async function handleDashboard(request: Request, env: Env): Promise<Response> {
     }
   } catch (err) {
     console.error('Dashboard fetch error:', err);
-    // If tokens are invalid, redirect to setup
     const msg = err instanceof Error ? err.message : '';
-    if (msg.includes('configured') || msg.includes('401')) return redirect('/setup');
+    // No tokens stored → first run
+    if (msg.includes('Not configured')) return redirect('/setup');
+    // Expired / invalid tokens → reconnect (keeps session, just re-links DL account)
+    if (msg.includes('401') || msg.includes('400') || msg.includes('Refresh') ||
+        msg.includes('token') || msg.includes('auth')) {
+      return redirect('/reconnect');
+    }
   }
 
   return htmlResp(dashboardPage(bookings, ownerName));
