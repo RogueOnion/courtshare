@@ -89,7 +89,8 @@ async function handleSetupGet(request: Request, env: Env): Promise<Response> {
 }
 
 async function handleSetupPost(request: Request, env: Env): Promise<Response> {
-  const form = await request.formData();
+  let form: FormData;
+  try { form = await request.formData(); } catch { return htmlResp(setupPage('Please fill in both fields.')); }
   const username = (form.get('username') as string || '').trim();
   const password = (form.get('password') as string || '').trim();
 
@@ -321,7 +322,10 @@ async function handleJoin(request: Request, env: Env, token: string): Promise<Re
   const link = await getShareLink(env.DB, token);
   if (!link) return new Response('Invite link not found.', { status: 404 });
 
-  const form     = await request.formData();
+  let form: FormData;
+  try { form = await request.formData(); } catch {
+    return redirect(`/share/${token}?error=${encodeURIComponent('Please enter your DL credentials.')}`);
+  }
   const username = (form.get('username') as string || '').trim();
   const password = (form.get('password') as string || '').trim();
 
@@ -412,8 +416,8 @@ async function handleReconnectGet(_request: Request, _env: Env): Promise<Respons
 }
 
 async function handleReconnectPost(request: Request, env: Env): Promise<Response> {
-  // Same as setup but skips session creation (user is already logged in)
-  const form     = await request.formData();
+  let form: FormData;
+  try { form = await request.formData(); } catch { return htmlResp(setupPage('Please fill in both fields.', true)); }
   const username = (form.get('username') as string || '').trim();
   const password = (form.get('password') as string || '').trim();
   if (!username || !password) return htmlResp(setupPage('Please fill in both fields.', true));

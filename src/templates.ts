@@ -131,10 +131,17 @@ export function setupPage(error?: string, reconnect = false): string {
           <label>Password</label>
           <input type="password" name="password" required autocomplete="current-password">
         </div>
-        <button type="submit" class="btn btn-primary">${btnText}</button>
+        <button type="submit" class="btn btn-primary" id="submitBtn">${btnText}</button>
       </form>
     </div>
     <p style="font-size:13px;margin-top:16px">Your credentials are encrypted with AES-256-GCM using your Worker's secret key. They are never shared with anyone.</p>
+    <script>
+      document.querySelector('form').addEventListener('submit', function() {
+        var btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.textContent = 'Connecting… (this takes a few seconds)';
+      });
+    </script>
   </div>`, title);
 }
 
@@ -349,9 +356,16 @@ export function sharePage(
           <label>Your DL password</label>
           <input type="password" name="password" required autocomplete="current-password">
         </div>
-        <button type="submit" class="btn btn-green">Join Court</button>
+        <button type="submit" class="btn btn-green" id="joinBtn">Join Court</button>
         <p class="privacy-note">⚡ Your credentials are used only to identify you with David Lloyd. They are never stored or shared.</p>
       </form>
+      <script>
+        document.querySelector('form').addEventListener('submit', function() {
+          var btn = document.getElementById('joinBtn');
+          btn.disabled = true;
+          btn.textContent = 'Joining… please wait';
+        });
+      </script>
     </div>` : ''}
   </div>`, `Join Court — ${dateStr}`);
 }
